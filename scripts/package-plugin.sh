@@ -34,6 +34,10 @@ if [ -f "${ROOT_DIR}/README.md" ]; then
     cp "${ROOT_DIR}/README.md" "${PACKAGE_DIR}/"
 fi
 
+if [ -f "${ROOT_DIR}/CHANGELOG.md" ]; then
+    cp "${ROOT_DIR}/CHANGELOG.md" "${PACKAGE_DIR}/"
+fi
+
 find "${PACKAGE_DIR}" -name ".DS_Store" -delete
 
 (
