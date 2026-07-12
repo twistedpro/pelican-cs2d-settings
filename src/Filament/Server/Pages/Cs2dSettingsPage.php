@@ -421,7 +421,7 @@ class Cs2dSettingsPage extends Page implements HasForms
 
         try {
             // CS2D reliably applies settings when they are directly in sys/server.cfg.
-            // Remove managed keys first, then append the current values so they win.
+            // Replace our managed block when present. Otherwise migrate old scattered keys once.
             $serverCfg = $this->fileExists($server, 'sys/server.cfg')
                 ? $this->readFile($server, 'sys/server.cfg')
                 : '';
@@ -429,25 +429,27 @@ class Cs2dSettingsPage extends Page implements HasForms
             // Remove old include line if we previously added it.
             $serverCfg = preg_replace('/^\s*exec\s+"sys\/pelican-generated\.cfg"\s*$/m', '', $serverCfg);
             $serverCfg = preg_replace('/^\s*exec\s+"pelican-generated\.cfg"\s*$/m', '', $serverCfg);
-            $serverCfg = preg_replace('/^\s*\/\/ Managed by Pelican CS2D Settings Plugin\s*(?:\R|$)/m', '', $serverCfg);
-
-            // Remove old managed block if it exists from the previous version.
-            $serverCfg = preg_replace(
-                '/\/\/ --- Pelican CS2D Settings START ---.*?\/\/ --- Pelican CS2D Settings END ---\s*/s',
-                '',
-                $serverCfg
-            );
-
             $settings = $this->configToKeyValueLines($config);
+            $managedBlock = implode("\n", [
+                '// --- Pelican CS2D Settings START ---',
+                '// Managed by Pelican CS2D Settings Plugin',
+                ...array_values($settings),
+                '// --- Pelican CS2D Settings END ---',
+            ]);
 
-            foreach (array_keys($settings) as $key) {
-                $serverCfg = preg_replace('/^\s*' . preg_quote($key, '/') . '\s+.*(?:\R|$)/m', '', $serverCfg);
+            $managedBlockPattern = '/\/\/ --- Pelican CS2D Settings START ---.*?\/\/ --- Pelican CS2D Settings END ---/s';
+
+            if (preg_match($managedBlockPattern, $serverCfg)) {
+                $serverCfg = preg_replace($managedBlockPattern, $managedBlock, $serverCfg, 1);
+            } else {
+                $serverCfg = preg_replace('/^\s*\/\/ Managed by Pelican CS2D Settings Plugin\s*(?:\R|$)/m', '', $serverCfg);
+
+                foreach (array_keys($settings) as $key) {
+                    $serverCfg = preg_replace('/^\s*' . preg_quote($key, '/') . '\s+.*(?:\R|$)/m', '', $serverCfg);
+                }
+
+                $serverCfg = rtrim($serverCfg) . "\n\n" . $managedBlock . "\n";
             }
-
-            $serverCfg = rtrim($serverCfg)
-                . "\n\n// Managed by Pelican CS2D Settings Plugin\n"
-                . implode("\n", $settings)
-                . "\n";
 
             $this->writeFile($server, 'sys/server.cfg', trim($serverCfg) . "\n");
 
