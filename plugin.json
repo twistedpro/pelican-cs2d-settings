@@ -1,0 +1,17 @@
+{
+    "id": "cs2dsettings",
+    "name": "Cs2dSettings",
+    "author": "Jason Dyer",
+    "version": "1.0.0",
+    "description": "Adds a CS2D settings page for managing server.cfg options, maps, gameplay rules, and bot configuration from the server panel.",
+    "category": "plugin",
+    "url": null,
+    "update_url": null,
+    "namespace": "JasonDyer\\Cs2dSettings",
+    "class": "Cs2dSettingsPlugin",
+    "panels": [
+        "server"
+    ],
+    "panel_version": "1.0.0-beta35",
+    "composer_packages": null
+}
