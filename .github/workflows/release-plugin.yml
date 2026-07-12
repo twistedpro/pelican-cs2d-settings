@@ -28,19 +28,18 @@ jobs:
           set -euo pipefail
 
           plugin_id="$(jq -r '.id' plugin.json)"
-          version="$(jq -r '.version' plugin.json)"
-          archive_name="${plugin_id}-${version}.zip"
+          archive_name="${plugin_id}.zip"
 
-          mkdir -p "dist" "package"
-          cp plugin.json "package/"
-          cp -R config resources src "package/"
+          mkdir -p "dist" "package/${plugin_id}"
+          cp plugin.json "package/${plugin_id}/"
+          cp -R config resources src "package/${plugin_id}/"
 
           if [ -f README.md ]; then
-            cp README.md "package/"
+            cp README.md "package/${plugin_id}/"
           fi
 
-          find "package" -name ".DS_Store" -delete
-          (cd package && zip -r "../dist/${archive_name}" .)
+          find "package/${plugin_id}" -name ".DS_Store" -delete
+          (cd package && zip -r "../dist/${archive_name}" "${plugin_id}")
 
           if unzip -l "dist/${archive_name}" | grep -E '(^|/)\.DS_Store$'; then
             echo "Archive contains .DS_Store files" >&2
