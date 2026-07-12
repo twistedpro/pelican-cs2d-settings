@@ -76,8 +76,6 @@ Build a Pelican-installable zip from the repository root:
 scripts/package-plugin.sh
 ```
 
-The archive is written to `dist/cs2dsettings.zip`.
-
 ## Usage
 
 1. Open a CS2D server in the Pelican server panel.
