@@ -454,12 +454,15 @@ class Cs2dSettingsPage extends Page implements HasForms
             }
 
             $this->writeFile($server, 'sys/server.cfg', trim($serverCfg) . "\n");
-            $syncedServerPlayers = $this->syncServerPlayersStartupVariable($server, (int) $data['sv_maxplayers']);
+            $syncedStartupVariables = array_filter([
+                $this->syncStartupVariable($server, 'SERVER_NAME', (string) $data['server_name']) ? 'SERVER_NAME' : null,
+                $this->syncStartupVariable($server, 'SERVER_PLAYERS', (string) (int) $data['sv_maxplayers']) ? 'SERVER_PLAYERS' : null,
+            ]);
 
             Notification::make()
                 ->title('CS2D settings saved')
-                ->body($syncedServerPlayers
-                    ? 'sys/server.cfg and the SERVER_PLAYERS startup variable were updated. Restart the server for changes to take effect.'
+                ->body($syncedStartupVariables !== []
+                    ? 'sys/server.cfg and startup variables were updated. Restart the server for changes to take effect.'
                     : 'sys/server.cfg was updated. Restart the server for changes to take effect.')
                 ->success()
                 ->send();
@@ -694,7 +697,7 @@ class Cs2dSettingsPage extends Page implements HasForms
         return $settings;
     }
 
-    private function syncServerPlayersStartupVariable(mixed $server, int $maxPlayers): bool
+    private function syncStartupVariable(mixed $server, string $envVariable, string $value): bool
     {
         try {
             $serverId = $server->id ?? null;
@@ -706,7 +709,7 @@ class Cs2dSettingsPage extends Page implements HasForms
 
             $variableId = DB::table('egg_variables')
                 ->where('egg_id', $eggId)
-                ->where('env_variable', 'SERVER_PLAYERS')
+                ->where('env_variable', $envVariable)
                 ->value('id');
 
             if ($variableId === null) {
@@ -719,7 +722,7 @@ class Cs2dSettingsPage extends Page implements HasForms
                     'variable_id' => $variableId,
                 ],
                 [
-                    'variable_value' => (string) $maxPlayers,
+                    'variable_value' => $value,
                 ],
             );
 
