@@ -68,6 +68,16 @@ panel_version: 1.0.0-beta35
 
 After installing or updating the plugin, clear/rebuild any panel/plugin cache required by your Pelican installation.
 
+## Packaging
+
+Build a Pelican-installable zip from the repository root:
+
+```bash
+scripts/package-plugin.sh
+```
+
+The archive is written to `dist/cs2dsettings.zip`.
+
 ## Usage
 
 1. Open a CS2D server in the Pelican server panel.

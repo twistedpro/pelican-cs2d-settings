@@ -2,7 +2,7 @@
     "id": "cs2dsettings",
     "name": "CS2D Settings",
     "author": "Jason Dyer",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Adds a CS2D settings page for managing server.cfg options, maps, gameplay rules, and bot configuration from the server panel.",
     "category": "plugin",
     "url": "https://github.com/twistedpro/pelican-cs2d-settings",

@@ -16,8 +16,10 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use JasonDyer\Cs2dSettings\Services\Cs2dServerDetector;
+use Throwable;
 
 class Cs2dSettingsPage extends Page implements HasForms
 {
@@ -389,8 +391,6 @@ class Cs2dSettingsPage extends Page implements HasForms
             'sv_password "' . $this->escapeCfg((string) ($data['server_password'] ?? '')) . '"',
             'sv_rcon "' . $this->escapeCfg((string) $data['rcon_password']) . '"',
 
-            'map "' . $this->escapeCfg($startMap) . '"',
-
             'sv_gamemode ' . (int) $data['sv_gamemode'],
             'sv_specmode ' . (int) $data['sv_specmode'],
             'sv_maxplayers ' . (int) $data['sv_maxplayers'],
@@ -415,6 +415,8 @@ class Cs2dSettingsPage extends Page implements HasForms
             'bot_jointeam ' . (int) $data['bot_jointeam'],
             'bot_prefix "' . $this->escapeCfg((string) $data['bot_prefix']) . '"',
             'bot_count ' . (int) $data['bot_count'],
+
+            'map "' . $this->escapeCfg($startMap) . '"',
 
             '',
         ]);
@@ -452,10 +454,13 @@ class Cs2dSettingsPage extends Page implements HasForms
             }
 
             $this->writeFile($server, 'sys/server.cfg', trim($serverCfg) . "\n");
+            $syncedServerPlayers = $this->syncServerPlayersStartupVariable($server, (int) $data['sv_maxplayers']);
 
             Notification::make()
                 ->title('CS2D settings saved')
-                ->body('sys/server.cfg was updated. Restart the server for changes to take effect.')
+                ->body($syncedServerPlayers
+                    ? 'sys/server.cfg and the SERVER_PLAYERS startup variable were updated. Restart the server for changes to take effect.'
+                    : 'sys/server.cfg was updated. Restart the server for changes to take effect.')
                 ->success()
                 ->send();
         } catch (Exception $exception) {
@@ -687,6 +692,43 @@ class Cs2dSettingsPage extends Page implements HasForms
         }
 
         return $settings;
+    }
+
+    private function syncServerPlayersStartupVariable(mixed $server, int $maxPlayers): bool
+    {
+        try {
+            $serverId = $server->id ?? null;
+            $eggId = $server->egg_id ?? null;
+
+            if ($serverId === null || $eggId === null) {
+                return false;
+            }
+
+            $variableId = DB::table('egg_variables')
+                ->where('egg_id', $eggId)
+                ->where('env_variable', 'SERVER_PLAYERS')
+                ->value('id');
+
+            if ($variableId === null) {
+                return false;
+            }
+
+            DB::table('server_variables')->updateOrInsert(
+                [
+                    'server_id' => $serverId,
+                    'variable_id' => $variableId,
+                ],
+                [
+                    'variable_value' => (string) $maxPlayers,
+                ],
+            );
+
+            return true;
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return false;
+        }
     }
 
     private function fileExists(mixed $server, string $path): bool
